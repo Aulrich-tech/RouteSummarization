@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Route Summarization Reviewer</title>
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--text:#1b2433;--muted:#5b6678;--accent:#1f6feb;--accent2:#e8f0ff;--ok:#1a7f37;--okbg:#e6f6ea;--bad:#c62828;--badbg:#fdeaea;--common:#1f6feb;--border:#dde3ec;--code:#eef2f8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141c;--card:#171e29;--text:#e6ebf3;--muted:#9aa6b8;--accent:#6aa5ff;--accent2:#1c2a44;--ok:#5fd07f;--okbg:#14301d;--bad:#ff8a80;--badbg:#3a1a1a;--common:#6aa5ff;--border:#2a3446;--code:#1e2735}}
+:root[data-theme="dark"]{--bg:#0f141c;--card:#171e29;--text:#e6ebf3;--muted:#9aa6b8;--accent:#6aa5ff;--accent2:#1c2a44;--ok:#5fd07f;--okbg:#14301d;--bad:#ff8a80;--badbg:#3a1a1a;--common:#6aa5ff;--border:#2a3446;--code:#1e2735}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--accent);color:#fff;padding:28px 20px;text-align:center}
+header h1{margin:0 0 6px;font-size:1.8rem}header p{margin:0;opacity:.9}
+nav{position:sticky;top:env(safe-area-inset-top,0px);background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:6px;overflow-x:auto;padding:8px 12px;z-index:5}
+nav a{white-space:nowrap;text-decoration:none;color:var(--text);padding:6px 12px;border-radius:99px;font-size:.9rem}
+nav a:hover{background:var(--accent2);color:var(--accent)}
+main{max-width:860px;margin:0 auto;padding:16px}
+section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin:18px 0}
+h2{margin-top:0;color:var(--accent)}h3{margin:20px 0 6px}
+.box{background:var(--accent2);border-left:4px solid var(--accent);padding:10px 14px;border-radius:8px;margin:12px 0}
+.ex{border:1px dashed var(--border);border-radius:10px;padding:12px 14px;margin:14px 0}
+code,.bin{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 6px;border-radius:5px}
+pre.bin{padding:10px 12px;overflow-x:auto;line-height:1.5;margin:8px 0}
+.c{color:var(--common);font-weight:700}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:420px}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left}th{background:var(--accent2)}
+.ans{background:var(--okbg);border-left:4px solid var(--ok);padding:8px 12px;border-radius:8px;margin-top:8px}
+ul,ol{padding-left:22px}
+button{font:inherit;cursor:pointer}
+.opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--okbg);border-color:var(--ok)}.opt.wrong{background:var(--badbg);border-color:var(--bad)}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 18px;margin-top:10px}
+.bar{height:8px;background:var(--code);border-radius:9px;overflow:hidden;margin-bottom:12px}.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+#fb{margin-top:10px;padding:10px 12px;border-radius:8px;display:none}
+footer{text-align:center;color:var(--muted);padding:20px}
+</style>
+</head>
+<body>
+<header><h1>🌐 Route Summarization Reviewer</h1><p>Route aggregation / supernetting, with worked examples and a practice quiz</p></header>
+<nav><a href="#what">What &amp; Why</a><a href="#steps">Steps</a><a href="#rules">Block Rules</a><a href="#ex">Examples</a><a href="#mistakes">Pitfalls</a><a href="#quiz">Quiz</a></nav>
+<main>
+
+<section id="what"><h2>1. What is route summarization?</h2>
+<p>Route summarization (also called <b>route aggregation</b> or <b>supernetting</b>) replaces many specific routes with <b>one summary route</b> that covers all of them. Instead of telling a neighbor router about 16 separate networks, you say “send me anything in this one big block.”</p>
+<div class="box"><b>Real-life analogy:</b> A courier company doesn’t keep a separate rule for every house on every street in Quezon City. They keep one rule: “anything for Quezon City goes to the QC hub.” The hub handles the details. Summarization works the same way: the upstream router only needs the big block, and the router that owns the networks handles the specifics.</div>
+<h3>Advantages</h3>
+<ul>
+<li><b>Saves memory:</b> smaller routing tables need less RAM.</li>
+<li><b>Saves bandwidth:</b> fewer routes to advertise means smaller routing updates.</li>
+<li><b>Saves CPU cycles:</b> fewer packets to process and smaller tables to search.</li>
+<li><b>Stability:</b> if one /24 inside the block keeps going up and down (“flapping”), the summary stays up, so other routers aren’t forced to recalculate again and again.</li>
+</ul>
+<div class="ex"><b>Situation:</b> A branch router has 16 LANs (172.16.0.0/24 to 172.16.15.0/24) and connects to the head office router over one WAN link. Without summarization the head office has 16 routes for this branch. With it, the head office has <b>one</b> route: <code>172.16.0.0/20</code>. If the 172.16.9.0/24 LAN flaps, the head office never notices, because the summary still stands.</div>
+</section>
+
+<section id="steps"><h2>2. How to calculate a summary route</h2>
+<ol>
+<li><b>Convert</b> the addresses to binary and line them up in a list. (Only the octet where the networks differ matters. The earlier octets are the same.)</li>
+<li><b>Find where the common pattern ends.</b> Look from the left for the last bit that is the same in every address.</li>
+<li><b>Count the common bits.</b> The summary is the <b>first (lowest) network address</b>, then a slash, then the number of common bits.</li>
+</ol>
+<div class="box"><b>Shortcut:</b> Count how many networks you have. If it’s a power of 2 (2, 4, 8, 16…), the number of <i>host-side bits you give up</i> is log₂ of that count. <b>New prefix = old prefix − bits given up.</b> 16 networks of /24 → 4 bits → <code>/20</code>.</div>
+<h3>Bit values of an octet</h3>
+<p><code>128 · 64 · 32 · 16 · 8 · 4 · 2 · 1</code>. Memorize these. Every example below uses them.</p>
+</section>
+
+<section id="rules"><h2>3. The block-size rules (very important)</h2>
+<p>Networks can only be combined into a summary when they form a <b>clean, aligned block</b>. The block size must be a power of 2, and the <b>starting address must be a multiple of the block size</b>.</p>
+<div class="wrap"><table>
+<tr><th>Networks combined</th><th>Bits that change</th><th>Prefix drops by</th><th>Start must be multiple of</th></tr>
+<tr><td>2</td><td>1 bit (0, 1)</td><td>1</td><td>2</td></tr>
+<tr><td>4</td><td>2 bits (00–11)</td><td>2</td><td>4</td></tr>
+<tr><td>8</td><td>3 bits (000–111)</td><td>3</td><td>8</td></tr>
+<tr><td>16</td><td>4 bits (0000–1111)</td><td>4</td><td>16</td></tr>
+<tr><td>32</td><td>5 bits</td><td>5</td><td>32</td></tr>
+</table></div>
+<div class="ex"><b>Situation:</b> You have 172.16.4.0/24 up to 172.16.11.0/24 (8 networks). It looks neat, but 4 is not a multiple of 8, so they <b>cannot</b> become one /21. A /21 block starts at 0, 8, 16, 24… So you’d split it: <code>172.16.4.0/22</code> (4–7) and <code>172.16.8.0/22</code> (8–11).</div>
+</section>
+
+<section id="ex"><h2>4. Worked examples</h2>
+
+<div class="ex"><h3>Example 1: 16 networks → /20</h3>
+<p>172.16.0.0/24 through 172.16.15.0/24. Only the 3rd octet changes:</p>
+<pre class="bin">172.16.<span class="c">0000</span> 0000.0   (0)
+172.16.<span class="c">0000</span> 0001.0   (1)
+   ...
+172.16.<span class="c">0000</span> 1111.0   (15)</pre>
+<p>First 16 bits (172.16) + first 4 bits of the 3rd octet (<span class="c">0000</span>) are common = 20 bits. The last 4 bits of that octet run through 0000–1111, which is exactly 16 networks.</p>
+<div class="ans">Summary: <b>172.16.0.0 /20</b></div></div>
+
+<div class="ex"><h3>Example 2: Two extra networks join (16.0 and 17.0)</h3>
+<p>Now add 172.16.16.0/24 and 172.16.17.0/24 to the list. Can we make one /19 or so? No: 16 and 17 start at 16, and 0–15 is already its own clean block. The best approach is two summaries.</p>
+<pre class="bin">172.16.<span class="c">0001 000</span>0.0   (16)
+172.16.<span class="c">0001 000</span>1.0   (17)</pre>
+<p>Common bits: 16 + 7 = 23 (only the last bit of the 3rd octet changes).</p>
+<div class="ans">Summaries: <b>172.16.0.0 /20</b> and <b>172.16.16.0 /23</b></div>
+<p><i>Why it matters:</i> never stretch a summary to cover networks that aren’t yours. A bigger /19 would advertise 172.16.18.0 to 172.16.31.0 too, and traffic for those would come to you and get dropped.</p></div>
+
+<div class="ex"><h3>Example 3: /28 subnets → /26</h3>
+<p>192.168.10.128/28, .144/28, .160/28, .176/28 (arranged in order). Only the last octet changes:</p>
+<pre class="bin">192.168.10.<span class="c">10</span>00 0000   (128)
+192.168.10.<span class="c">10</span>01 0000   (144)
+192.168.10.<span class="c">10</span>10 0000   (160)
+192.168.10.<span class="c">10</span>11 0000   (176)</pre>
+<p>24 bits (192.168.10) + 2 common bits (<span class="c">10</span>) = 26. Four /28 blocks (16 addresses each) = 64 addresses = a /26.</p>
+<div class="ans">Summary: <b>192.168.10.128 /26</b></div></div>
+
+<div class="ex"><h3>Example 4: /22 blocks → /21</h3>
+<p>172.16.184.0/22, .188.0/22, .192.0/22, .196.0/22</p>
+<pre class="bin">172.16.<span class="c">10111</span> 000.0   (184)
+172.16.<span class="c">10111</span> 100.0   (188)
+172.16.<span class="c">11000</span> 000.0   (192)
+172.16.<span class="c">11000</span> 100.0   (196)</pre>
+<p>The first two share <span class="c">10111</span> (5 bits) → 16 + 5 = 21. The last two share <span class="c">11000</span> → also 21. But 10111 and 11000 differ at the very first bit, so all four <b>cannot</b> become one route.</p>
+<div class="ans">Summaries: <b>172.16.184.0 /21</b> and <b>172.16.192.0 /21</b></div></div>
+
+<div class="ex"><h3>Example 5: Same size blocks, spacing of 8</h3>
+<pre class="bin">192.168.0.<span class="c">110</span>0 0000   (192)
+192.168.0.<span class="c">110</span>0 1000   (200)
+192.168.0.<span class="c">110</span>1 0000   (208)
+192.168.0.<span class="c">110</span>1 1000   (216)</pre>
+<p>Only the last 5 bits change, 3 bits are common: 24 + 3 = 27.</p>
+<div class="ans">Summary: <b>192.168.0.192 /27</b></div></div>
+
+<div class="ex"><h3>Example 6: Networks that don’t line up</h3>
+<pre class="bin">192.168.0.0101 1100   (92)
+192.168.0.0110 0000   (96)
+192.168.0.0110 0100   (100)
+192.168.0.0110 1000   (104)</pre>
+<p>92 is not at a clean boundary relative to 96–107, so one tidy summary would swallow addresses that aren’t part of the group. The result is a few exact routes:</p>
+<div class="ans"><b>192.168.0.92 /30</b>, <b>192.168.0.96 /29</b>, <b>192.168.0.104 /30</b></div></div>
+
+<div class="ex"><h3>Example 7: Summarizing in layers (mixed sizes)</h3>
+<p>Start with 192.168.10.0/27, .32/28, .48/28, .64/26, .128/25.</p>
+<ol>
+<li><b>.32/28 + .48/28</b> (0010 0000 and 0011 0000 share the first 3 bits “001”, so 24 + 3 = 27) → <code>192.168.10.32/27</code></li>
+<li><b>.0/27 + .32/27</b> (0000 0000 and 0010 0000, 2 common bits) → <code>192.168.10.0/26</code></li>
+<li><b>.0/26 + .64/26</b> (0000 0000 and 0100 0000, 1 common bit) → <code>192.168.10.0/25</code></li>
+<li><b>.0/25 + .128/25</b> (0000 0000 and 1000 0000, 0 common bits in this octet) → <code>192.168.10.0/24</code></li>
+</ol>
+<div class="ans">Final summary of everything: <b>192.168.10.0 /24</b></div></div>
+
+<div class="ex"><h3>Example 8: Mixed /24s, /23s and /21 → /20</h3>
+<p>172.16.32.0/24, 33.0/24, 34.0/23, 36.0/23, 38.0/23, 40.0/21</p>
+<ul>
+<li>32.0/24 + 33.0/24 → <code>172.16.32.0/23</code></li>
+<li>That /23 (32–33) + 34.0/23 + 36.0/23 + 38.0/23 cover 32–39 → <code>172.16.32.0/21</code></li>
+<li>40.0/21 covers 40–47. Together 32–47:</li>
+</ul>
+<pre class="bin">172.16.<span class="c">0010</span> 0000.0   (32)
+172.16.<span class="c">0010</span> 1000.0   (40 block)
+ … up to 172.16.<span class="c">0010</span> 1111.0   (47)</pre>
+<div class="ans">Final summary: <b>172.16.32.0 /20</b></div></div>
+
+<div class="ex"><h3>Example 9: A real-life campus situation</h3>
+<p>A school has 4 buildings, each with its own subnet: Library 192.168.20.0/26, Science 192.168.20.64/26, Admin 192.168.20.128/26, Gym 192.168.20.192/26.</p>
+<p>Last octet starts: 0, 64, 128, 192 → <code>00</code>, <code>01</code>, <code>10</code>, <code>11</code>. All 2 leading bits are used, so zero bits are common in that octet: 24 + 0 = 24.</p>
+<div class="ans">The ISP router needs only <b>192.168.20.0 /24</b>. Four routes became one.</div></div>
+</section>
+
+<section id="mistakes"><h2>5. Common mistakes</h2>
+<ul>
+<li><b>Using a non-power-of-2 count.</b> 6 networks can’t be one clean summary. Group them as 4 + 2.</li>
+<li><b>Wrong start address.</b> Summary must start at the <i>lowest</i> network address, and it must be aligned to the block size.</li>
+<li><b>Over-summarizing.</b> A summary that covers networks you don’t own can black-hole traffic.</li>
+<li><b>Mixing up “prefix − bits”.</b> 8 networks of /24 → /21 (24 − 3), not /27.</li>
+<li><b>Only comparing the first and last address by decimal.</b> Always check in binary for where the pattern breaks.</li>
+</ul>
+</section>
+
+<section id="quiz"><h2>6. Practice quiz</h2>
+<div class="bar"><i id="pb"></i></div>
+<div id="qbox"></div>
+</section>
+</main>
+<footer>Route Summarization Reviewer · based on the lesson “6_Route_Summarization”</footer>
+
+<script>
+var Q=[
+{q:"Which is NOT an advantage of route summarization?",o:["Smaller routing tables","Less bandwidth used for updates","More routes to advertise","Fewer CPU cycles used"],a:2,e:"Summarization reduces the number of routes. “More routes” is the opposite of the goal."},
+{q:"What is the summary route for 172.16.0.0/24 through 172.16.15.0/24 (16 networks)?",o:["172.16.0.0/16","172.16.0.0/20","172.16.0.0/24","172.16.0.0/28"],a:1,e:"16 networks = 4 bits (0000–1111). 24 − 4 = 20."},
+{q:"Summarize 10.1.0.0/24, 10.1.1.0/24, 10.1.2.0/24, 10.1.3.0/24.",o:["10.1.0.0/21","10.1.0.0/23","10.1.0.0/22","10.1.0.0/25"],a:2,e:"4 networks = 2 bits. 24 − 2 = 22."},
+{q:"Summarize 192.168.10.128/28, .144/28, .160/28 and .176/28.",o:["192.168.10.128/25","192.168.10.128/26","192.168.10.128/27","192.168.10.128/28"],a:1,e:"128, 144, 160, 176 = 1000, 1001, 1010, 1011 in the top 4 bits. The first 2 bits (10) are common: 24 + 2 = 26."},
+{q:"What is the first step in calculating a summary route?",o:["Count the common bits","Convert the addresses to binary and align them","Pick the highest address","Subtract the subnet masks"],a:1,e:"Steps: (1) binary and align, (2) find where the common pattern ends, (3) count common bits."},
+{q:"172.16.16.0/24 and 172.16.17.0/24 summarize to…",o:["172.16.16.0/22","172.16.16.0/23","172.16.16.0/24","172.16.17.0/23"],a:1,e:"16 = 0001 0000 and 17 = 0001 0001. Only the last bit differs, so 16 + 7 = 23, starting at the lowest address (16.0)."},
+{q:"Why can’t 172.16.4.0/24 – 172.16.11.0/24 (8 networks) be one /21?",o:["8 is not a power of 2","The block does not start at a multiple of 8","They are not /24s","172.16 is a private range"],a:1,e:"A /21 made from /24s must start at 0, 8, 16, 24… Starting at 4 breaks the alignment, so split it into 4.0/22 and 8.0/22."},
+{q:"Summarize 172.16.184.0/22 and 172.16.188.0/22.",o:["172.16.184.0/21","172.16.184.0/20","172.16.184.0/23","172.16.188.0/21"],a:0,e:"184 = 1011 1000 and 188 = 1011 1100. Five common bits in the octet gives 16 + 5 = 21. Start at the lowest (184)."},
+{q:"How many /24 networks make up a /19 summary?",o:["8","16","32","64"],a:2,e:"24 − 19 = 5 bits, and 2⁵ = 32 networks."},
+{q:"Summarize 192.168.0.192/29, .200/29, .208/29, .216/29.",o:["192.168.0.192/26","192.168.0.192/27","192.168.0.192/28","192.168.0.192/29"],a:1,e:"192–223 in the last octet. 192 = 110 00000, and the first 3 bits (110) stay the same: 24 + 3 = 27."},
+{q:"Summarize 172.16.32.0/21 and 172.16.40.0/21.",o:["172.16.32.0/19","172.16.32.0/20","172.16.32.0/22","172.16.40.0/20"],a:1,e:"32 = 0010 0000 and 40 = 0010 1000. Four common bits → 16 + 4 = 20, starting at 32.0."},
+{q:"A /24 inside your summary block keeps flapping. What does the summary do for stability?",o:["It makes the flapping worse","Neighbors don’t see the flap because the summary stays advertised","It removes the flapping network","It doubles the routing table"],a:1,e:"The summary stays up as long as at least one network inside it is reachable, so outside routers don’t need to recompute."}
+];
+var i=0,score=0,box=document.getElementById("qbox"),pb=document.getElementById("pb");
+function show(){
+ if(i>=Q.length){var pct=Math.round(score/Q.length*100);
+  box.innerHTML="<h3>Done! Score: "+score+" / "+Q.length+" ("+pct+"%)</h3><p>"+(pct>=80?"Great job, you’re ready for the exam. 🎉":pct>=50?"Good start. Review the examples and try again.":"Review the steps and block rules, then retry.")+"</p><button class='btn' id='rs'>Restart quiz</button>";
+  pb.style.width="100%";document.getElementById("rs").onclick=function(){i=0;score=0;show()};return}
+ var q=Q[i];pb.style.width=(i/Q.length*100)+"%";
+ var h="<p><b>Question "+(i+1)+" of "+Q.length+"</b></p><p>"+q.q+"</p>";
+ q.o.forEach(function(t,k){h+="<button class='opt' data-k='"+k+"'>"+t+"</button>"});
+ h+="<div id='fb'></div><button class='btn' id='nx' style='display:none'>"+(i==Q.length-1?"See results":"Next")+"</button>";
+ box.innerHTML=h;
+ var bs=box.querySelectorAll(".opt");
+ bs.forEach(function(b){b.onclick=function(){
+  var k=+b.dataset.k;bs.forEach(function(x){x.disabled=true});
+  bs[q.a].classList.add("right");
+  var fb=document.getElementById("fb");fb.style.display="block";
+  if(k==q.a){score++;fb.style.background="var(--okbg)";fb.innerHTML="<b>Correct!</b> "+q.e}
+  else{b.classList.add("wrong");fb.style.background="var(--badbg)";fb.innerHTML="<b>Not quite.</b> "+q.e}
+  var nx=document.getElementById("nx");nx.style.display="inline-block";nx.onclick=function(){i++;show()}}});
+}
+show();
+</script>
+</body>
+</html>
